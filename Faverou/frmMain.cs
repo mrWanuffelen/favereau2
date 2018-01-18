@@ -43,5 +43,11 @@ namespace Faverou
         {
             MessageBox.Show("Opción no implementada","Aviso del Sistema");
         }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            frmDesencriptar fm = new frmDesencriptar();
+            fm.ShowDialog(this);
+        }
     }
 }
