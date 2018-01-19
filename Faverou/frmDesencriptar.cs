@@ -25,20 +25,47 @@ namespace Faverou
 
         private void btnDescargarFTP_Click(object sender, EventArgs e)
         {
+            #region Ftp
             archivos = listarArchivosFTP();
             foreach (string arch in archivos)
             {
                 DescargarTxtFTP(arch);
             }
+            #endregion
+
+            #region DataTable
+            DataTable data = new DataTable();
+            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosEntrada\\";
+            foreach (string arch in archivos)
+            {
+                String[] substrings = arch.Split('.');
+                DataTable newData = LecturaArchivoEntrada(path + substrings[0] + "\\" + arch);
+                data.Merge(newData);
+
+                CrearLog(arch);
+            }
+            #endregion
         }
 
-        #region FTP
+        private void btnSalida_Click(object sender, EventArgs e)
+        {
+            string nameFolder = "\\VUELTA0000" + DateTime.Today.Year + DateTime.Today.Month + DateTime.Today.Day + DateTime.Today.Hour + DateTime.Today.Minute;
+            string nameFile = nameFolder + ".txt";
+
+            string path = CreateDirectoryAndFileEnd(nameFolder, nameFile);
+            
+            
+
+            //EscribirArchivoSalida(archivo, data);
+        }
+
+        #region Métodos Auxiliares FTP
         public void DescargarTxtFTP(string _fileName)
         {
             #region Credencial
-            string url = "ftp://genomica-acha.com.ar/" + _fileName;
-            string user = "genoma";
-            string password = "Acha2099";
+            string url = "ftp://190.210.219.36/IN/" + _fileName;
+            string user = "prueba";
+            string password = "feriado";
             #endregion
 
             #region Descargo el TXT
@@ -80,9 +107,9 @@ namespace Faverou
         public void DescargarPdfFTP(string path, string _fileName)
         {
             #region Credencial
-            string url = "ftp://genomica-acha.com.ar/" + _fileName;
-            string user = "genoma";
-            string password = "Acha2099";
+            string url = "ftp://190.210.219.36/IN/" + _fileName;
+            string user = "prueba";
+            string password = "feriado";
             #endregion
 
             string ResponseDescription = "";
@@ -119,8 +146,18 @@ namespace Faverou
         {
             String[] substrings = _nameFolder.Split('.');
             
-            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", " ") + "Archivos\\ArchivosEntrada\\" + substrings[0];
+            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosEntrada\\" + substrings[0];
             
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+
+            return path;
+        }
+
+        public string CreateDirectoryAndFileEnd(string _nameFolder, string _nameFile)
+        {
+            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosSalida\\" + _nameFolder + "\\" + _nameFile;
+
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
 
@@ -156,9 +193,9 @@ namespace Faverou
         public List<string> listarArchivosFTP()
         {
             #region Credencial
-            string url = "ftp://genomica-acha.com.ar/";
-            string user = "genoma";
-            string pass = "Acha2099";
+            string url = "ftp://190.210.219.36/IN/";
+            string user = "prueba";
+            string pass = "feriado";
             #endregion
 
             FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(url));
@@ -194,27 +231,14 @@ namespace Faverou
                     if (extension[1].ToString() == "txt")
                         archivos_ftp.Add(caracter[cant].ToString());
                 }
-
-                //01-17-18  05:42PM               121560 0500026170.pdf
             }
             reader.Close();
 
             return archivos_ftp;
         }
         #endregion
-
-        private void btnDecodificar_Click(object sender, EventArgs e)
-        {
-            DataTable data = new DataTable();
-            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", " ") + "Archivos\\ArchivosEntrada\\";
-            foreach (string arch in archivos)
-            {
-                String[] substrings = arch.Split('.');
-                DataTable newData = LecturaArchivoEntrada(path + substrings[0] + "\\" + arch);
-                data.Merge(newData);
-            }
-        }
-
+        
+        #region Métodos Auxiliares DataTable
         public DataTable LecturaArchivoEntrada(string path)
         {
             DataTable dt = new DataTable();
@@ -361,6 +385,54 @@ namespace Faverou
 
             return dt;
         }
+
+        public void EscribirArchivoSalida(string path, DataTable data)
+        {
+            StreamWriter WriteReportFile = File.AppendText(path);
+
+            foreach (DataRow r in data.Rows)
+            {
+                string nuevaLinea = r[1].ToString() + ";" + r[2].ToString() + ";" + r[3].ToString() + ";" + r[4].ToString() + ";" + r[5].ToString() + ";" + r[6].ToString() + ";" + r[7].ToString() + ";" + r[8].ToString() + ";" + r[9].ToString();
+                nuevaLinea += ";" + r[10].ToString() + ";" + r[11].ToString() + ";" + r[12].ToString() + ";" + r[13].ToString() + ";" + r[14].ToString() + ";" + r[15].ToString() + ";" + r[16].ToString() + ";" + r[17].ToString() + ";" + r[18].ToString();
+                nuevaLinea += ";" + r[19].ToString() + ";" + r[20].ToString() + ";" + r[21].ToString() + ";" + r[22].ToString() + ";" + r[23].ToString() + ";" + r[24].ToString() + ";" + r[25].ToString() + ";" + r[26].ToString() + ";" + r[27].ToString();
+                nuevaLinea += ";" + r[28].ToString() + ";" + r[29].ToString() + ";" + r[30].ToString() + ";" + r[31].ToString() + ";" + r[32].ToString() + ";" + r[33].ToString() + ";" + r[34].ToString() + ";" + r[35].ToString() + ";" + r[36].ToString();
+                nuevaLinea += ";" + r[37].ToString() + ";" + r[38].ToString() + ";" + r[39].ToString() + ";" + r[40].ToString() + ";" + r[41].ToString() + ";" + r[42].ToString() + ";" + r[43].ToString() + ";" + r[44].ToString() + ";" + r[45].ToString();
+                nuevaLinea += ";" + r[46].ToString() + ";" + r[47].ToString() + ";" + r[48].ToString() + ";" + r[49].ToString() + ";" + r[50].ToString() + ";" + r[51].ToString();
+
+                WriteReportFile.WriteLine(nuevaLinea);
+            }
+
+            WriteReportFile.Close();
+        }
+        #endregion
+
+        #region Métodos Log
+        public void CrearLog(string _file)
+        {
+            try
+            {
+                string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Log\\";
+                string nameFile = "LogEntrada.txt";
+                string fullPath = path + nameFile;
+
+                if (!File.Exists(fullPath))
+                    File.Create(fullPath);
+
+                //Pass the filepath and filename to the StreamWriter Constructor
+                StreamWriter sw = new StreamWriter(fullPath, true);
+
+                //Write a line of text
+                sw.WriteLine(String.Format("{0:d/M/yyyy HH:mm:ss}", DateTime.Now) + "," + _file + "," + -1);
+
+                //Close the file
+                sw.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        #endregion
 
         
     }

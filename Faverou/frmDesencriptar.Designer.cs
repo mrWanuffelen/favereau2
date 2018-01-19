@@ -29,14 +29,12 @@
         private void InitializeComponent()
         {
             this.btnDescargarFTP = new System.Windows.Forms.Button();
-            this.btnDecodificar = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.btnSalida = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnDescargarFTP
             // 
-            this.btnDescargarFTP.Location = new System.Drawing.Point(200, 25);
+            this.btnDescargarFTP.Location = new System.Drawing.Point(12, 24);
             this.btnDescargarFTP.Name = "btnDescargarFTP";
             this.btnDescargarFTP.Size = new System.Drawing.Size(75, 23);
             this.btnDescargarFTP.TabIndex = 0;
@@ -44,55 +42,32 @@
             this.btnDescargarFTP.UseVisualStyleBackColor = true;
             this.btnDescargarFTP.Click += new System.EventHandler(this.btnDescargarFTP_Click);
             // 
-            // btnDecodificar
+            // btnSalida
             // 
-            this.btnDecodificar.Location = new System.Drawing.Point(225, 122);
-            this.btnDecodificar.Name = "btnDecodificar";
-            this.btnDecodificar.Size = new System.Drawing.Size(75, 23);
-            this.btnDecodificar.TabIndex = 1;
-            this.btnDecodificar.Text = "Decodificar";
-            this.btnDecodificar.UseVisualStyleBackColor = true;
-            this.btnDecodificar.Click += new System.EventHandler(this.btnDecodificar_Click);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(13, 30);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(170, 13);
-            this.label1.TabIndex = 2;
-            this.label1.Text = "1- Descargue los archivos del FTP";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(13, 127);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(197, 13);
-            this.label2.TabIndex = 3;
-            this.label2.Text = "2- Decodifque los archivos descargados";
+            this.btnSalida.Location = new System.Drawing.Point(13, 92);
+            this.btnSalida.Name = "btnSalida";
+            this.btnSalida.Size = new System.Drawing.Size(75, 23);
+            this.btnSalida.TabIndex = 1;
+            this.btnSalida.Text = "Salida";
+            this.btnSalida.UseVisualStyleBackColor = true;
+            this.btnSalida.Click += new System.EventHandler(this.btnSalida_Click);
             // 
             // frmDesencriptar
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(710, 505);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.btnDecodificar);
+            this.ClientSize = new System.Drawing.Size(372, 204);
+            this.Controls.Add(this.btnSalida);
             this.Controls.Add(this.btnDescargarFTP);
             this.Name = "frmDesencriptar";
             this.Text = "frmDesencriptar";
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
 
         private System.Windows.Forms.Button btnDescargarFTP;
-        private System.Windows.Forms.Button btnDecodificar;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button btnSalida;
     }
 }
