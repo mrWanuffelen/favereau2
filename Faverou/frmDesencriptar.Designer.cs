@@ -30,6 +30,8 @@
         {
             this.btnDescargarFTP = new System.Windows.Forms.Button();
             this.btnSalida = new System.Windows.Forms.Button();
+            this.btnInFTP = new System.Windows.Forms.Button();
+            this.btnBorrar = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnDescargarFTP
@@ -52,11 +54,33 @@
             this.btnSalida.UseVisualStyleBackColor = true;
             this.btnSalida.Click += new System.EventHandler(this.btnSalida_Click);
             // 
+            // btnInFTP
+            // 
+            this.btnInFTP.Location = new System.Drawing.Point(128, 92);
+            this.btnInFTP.Name = "btnInFTP";
+            this.btnInFTP.Size = new System.Drawing.Size(75, 23);
+            this.btnInFTP.TabIndex = 2;
+            this.btnInFTP.Text = "Subir a FTP";
+            this.btnInFTP.UseVisualStyleBackColor = true;
+            this.btnInFTP.Click += new System.EventHandler(this.btnInFTP_Click);
+            // 
+            // btnBorrar
+            // 
+            this.btnBorrar.Location = new System.Drawing.Point(210, 91);
+            this.btnBorrar.Name = "btnBorrar";
+            this.btnBorrar.Size = new System.Drawing.Size(75, 23);
+            this.btnBorrar.TabIndex = 3;
+            this.btnBorrar.Text = "Borrar FTP";
+            this.btnBorrar.UseVisualStyleBackColor = true;
+            this.btnBorrar.Click += new System.EventHandler(this.btnBorrar_Click);
+            // 
             // frmDesencriptar
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(372, 204);
+            this.Controls.Add(this.btnBorrar);
+            this.Controls.Add(this.btnInFTP);
             this.Controls.Add(this.btnSalida);
             this.Controls.Add(this.btnDescargarFTP);
             this.Name = "frmDesencriptar";
@@ -69,5 +93,7 @@
 
         private System.Windows.Forms.Button btnDescargarFTP;
         private System.Windows.Forms.Button btnSalida;
+        private System.Windows.Forms.Button btnInFTP;
+        private System.Windows.Forms.Button btnBorrar;
     }
 }

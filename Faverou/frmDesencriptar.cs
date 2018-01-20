@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -20,8 +21,19 @@ namespace Faverou
             InitializeComponent();
         }
 
-        List<string> archivos = new List<string>();
+        #region Credenciales FTP
+        /*static string url = "ftp://genomica-acha.com.ar/";
+        static string user = "genoma";
+        static string pass = "Acha2099";*/
 
+        //static string url = "ftp://190.210.219.36";
+        static string urlDown = "ftp://190.210.219.36/IN/";
+        static string urlUp = "ftp://190.210.219.36/OUT/";
+        static string user = "prueba";
+        static string pass = "feriado";
+        #endregion
+
+        List<string> archivos = new List<string>();
 
         private void btnDescargarFTP_Click(object sender, EventArgs e)
         {
@@ -42,7 +54,7 @@ namespace Faverou
                 DataTable newData = LecturaArchivoEntrada(path + substrings[0] + "\\" + arch);
                 data.Merge(newData);
 
-                CrearLog(arch);
+                CrearLogEntrada(arch);
             }
             #endregion
         }
@@ -52,21 +64,58 @@ namespace Faverou
             string nameFolder = "\\VUELTA0000" + DateTime.Today.Year + DateTime.Today.Month + DateTime.Today.Day + DateTime.Today.Hour + DateTime.Today.Minute;
             string nameFile = nameFolder + ".txt";
 
-            string path = CreateDirectoryAndFileEnd(nameFolder, nameFile);
-            
-            
+            string path = CreateDirectoryAndFileEnd(nameFolder);
+            string pathFile = path + "\\" + nameFile;
 
-            //EscribirArchivoSalida(archivo, data);
+            #region DataTable
+            DataTable data = new DataTable();
+            string path1 = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosEntrada\\";
+            foreach (string arch in archivos)
+            {
+                String[] substrings = arch.Split('.');
+                DataTable newData = LecturaArchivoEntrada(path1 + substrings[0] + "\\" + arch);
+                data.Merge(newData);
+            }
+            #endregion
+
+            //Genera el txt
+            EscribirArchivoSalida(pathFile, data);
+
+            //Se crea el registro del archivo de salida
+            CrearLogSalida(nameFile);
+
+            //Encriptar archivo
+            Encrypt(pathFile);            
+        }
+
+        private void btnInFTP_Click(object sender, EventArgs e)
+        {
+            string nameFolder = "\\VUELTA0000" + DateTime.Today.Year + DateTime.Today.Month + DateTime.Today.Day + DateTime.Today.Hour + DateTime.Today.Minute;
+            string nameFile = nameFolder + ".txt";
+
+            string pathFolder = CreateDirectoryAndFileEnd(nameFolder);
+            
+            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosSalida\\" + nameFolder;
+
+            //Carga los archivos en el FTP
+            FileInfo[] files = listAllArchivosDirectory(pathFolder);
+            foreach(FileInfo f in files)
+            {
+                if(f.Extension.ToString() != ".txt")
+                    UploadFile(pathFolder + "\\" + f.Name, f.Name);
+            }
+        }
+
+        private void btnBorrar_Click(object sender, EventArgs e)
+        {
+            DeleteFileFTP();
         }
 
         #region Métodos Auxiliares FTP
+        #region Descarga
         public void DescargarTxtFTP(string _fileName)
         {
-            #region Credencial
-            string url = "ftp://190.210.219.36/IN/" + _fileName;
-            string user = "prueba";
-            string password = "feriado";
-            #endregion
+            string url = urlDown + _fileName;
 
             #region Descargo el TXT
             // Get the object used to communicate with the server.
@@ -74,7 +123,7 @@ namespace Faverou
             string pathFolder = CreateDirectoryAndFile(_fileName);
 
             // Los datos del usuario (credenciales)
-            NetworkCredential cr = new NetworkCredential(user, password);
+            NetworkCredential cr = new NetworkCredential(user, pass);
             dirFtp.Credentials = cr;
 
             // El comando a ejecutar usando la enumeración de WebRequestMethods.Ftp
@@ -106,18 +155,14 @@ namespace Faverou
 
         public void DescargarPdfFTP(string path, string _fileName)
         {
-            #region Credencial
-            string url = "ftp://190.210.219.36/IN/" + _fileName;
-            string user = "prueba";
-            string password = "feriado";
-            #endregion
+            string url = urlDown + _fileName;
 
             string ResponseDescription = "";
             path += "\\" + _fileName;
 
             FtpWebRequest req = (FtpWebRequest)FtpWebRequest.Create(url);
             req.Method = WebRequestMethods.Ftp.DownloadFile;
-            req.Credentials = new NetworkCredential(user, password);
+            req.Credentials = new NetworkCredential(user, pass);
             req.UseBinary = true;
             req.Proxy = null;
             try
@@ -154,13 +199,13 @@ namespace Faverou
             return path;
         }
 
-        public string CreateDirectoryAndFileEnd(string _nameFolder, string _nameFile)
+        public string CreateDirectoryAndFileEnd(string _nameFolder)
         {
-            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosSalida\\" + _nameFolder + "\\" + _nameFile;
+            string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosSalida\\" + _nameFolder;
 
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-
+            
             return path;
         }
 
@@ -192,17 +237,13 @@ namespace Faverou
                 
         public List<string> listarArchivosFTP()
         {
-            #region Credencial
-            string url = "ftp://190.210.219.36/IN/";
-            string user = "prueba";
-            string pass = "feriado";
-            #endregion
-
-            FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(url));
+            FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(urlDown));
 
             // Los datos del usuario (credenciales)
             NetworkCredential cr = new NetworkCredential(user, pass);
             dirFtp.Credentials = cr;
+
+            //dirFtp.UsePassive = true;
 
             // El comando a ejecutar
             dirFtp.Method = "LIST";
@@ -212,12 +253,10 @@ namespace Faverou
 
             // Obtener el resultado del comando
 
-            List<string> archivos_ftp = new List<string>();
-            
+            List<string> archivos_ftp = new List<string>();           
 
             StreamReader reader = new StreamReader(dirFtp.GetResponse().GetResponseStream());
-
-
+            
             while (!reader.EndOfStream)
             {
                 //Application.DoEvents();
@@ -236,8 +275,109 @@ namespace Faverou
 
             return archivos_ftp;
         }
+
+        public List<string> listAllArchivosFTP()
+        {
+            FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(urlDown));
+
+            // Los datos del usuario (credenciales)
+            NetworkCredential cr = new NetworkCredential(user, pass);
+            dirFtp.Credentials = cr;
+
+            //dirFtp.UsePassive = true;
+
+            // El comando a ejecutar
+            dirFtp.Method = "LIST";
+
+            // También usando la enumeración de WebRequestMethods.Ftp
+            dirFtp.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+
+            // Obtener el resultado del comando
+
+            List<string> archivos_ftp = new List<string>();
+
+            StreamReader reader = new StreamReader(dirFtp.GetResponse().GetResponseStream());
+
+            while (!reader.EndOfStream)
+            {
+                //Application.DoEvents();
+                //archivos_ftp.Add(reader.ReadLine());
+                String[] caracter = reader.ReadLine().Split(' ');
+                Int32 cant = caracter.Count() - 1;
+
+                archivos_ftp.Add(caracter[cant].ToString());                
+            }
+            reader.Close();
+
+            return archivos_ftp;
+        }
+
+        public FileInfo[] listAllArchivosDirectory(string _path)
+        {
+            DirectoryInfo directory = new DirectoryInfo(_path);
+
+            FileInfo[] files = directory.GetFiles("*.*");
+
+            DirectoryInfo[] directories = directory.GetDirectories();
+
+            return files;
+        }
+
+        public void DeleteFileFTP()
+        {
+            List<string> archivosDelete = listAllArchivosFTP();
+
+            foreach (string arch in archivosDelete)
+            {
+                string url = urlDown + arch;
+                FtpWebRequest requestFileDelete = (FtpWebRequest)WebRequest.Create(url);
+                requestFileDelete.Credentials = new NetworkCredential(user, pass);
+                requestFileDelete.Method = WebRequestMethods.Ftp.DeleteFile;
+
+                FtpWebResponse responseFileDelete = (FtpWebResponse)requestFileDelete.GetResponse();
+            }
+        }
         #endregion
-        
+
+        public static void UploadFile(string path, string _fileName)
+        {
+            string newUri = urlUp + _fileName;
+
+            FtpWebRequest ftpRequest;
+            FtpWebResponse ftpResponse;
+            try
+            {
+                //define os requesitos para se conectar com o servidor
+                ftpRequest = (FtpWebRequest)FtpWebRequest.Create(new Uri(newUri));
+                ftpRequest.Method = WebRequestMethods.Ftp.UploadFile;
+                ftpRequest.Proxy = null;
+                ftpRequest.UseBinary = true;
+                ftpRequest.Credentials = new NetworkCredential(user, pass);
+
+                //Seleção do arquivo a ser enviado
+                FileInfo archivo = new FileInfo(path);
+                byte[] fileContents = new byte[archivo.Length];
+
+                using (FileStream fr = archivo.OpenRead())
+                {
+                    fr.Read(fileContents, 0, Convert.ToInt32(archivo.Length));
+                }
+
+                using (Stream writer = ftpRequest.GetRequestStream())
+                {
+                    writer.Write(fileContents, 0, fileContents.Length);
+                }
+
+                //obtem o FtpWebResponse da operação de upload
+                ftpResponse = (FtpWebResponse)ftpRequest.GetResponse();
+            }
+            catch (WebException webex)
+            {
+                MessageBox.Show(webex.ToString());
+            }
+        }
+        #endregion
+
         #region Métodos Auxiliares DataTable
         public DataTable LecturaArchivoEntrada(string path)
         {
@@ -399,7 +539,7 @@ namespace Faverou
                 nuevaLinea += ";" + r[37].ToString() + ";" + r[38].ToString() + ";" + r[39].ToString() + ";" + r[40].ToString() + ";" + r[41].ToString() + ";" + r[42].ToString() + ";" + r[43].ToString() + ";" + r[44].ToString() + ";" + r[45].ToString();
                 nuevaLinea += ";" + r[46].ToString() + ";" + r[47].ToString() + ";" + r[48].ToString() + ";" + r[49].ToString() + ";" + r[50].ToString() + ";" + r[51].ToString();
 
-                WriteReportFile.WriteLine(nuevaLinea);
+                WriteReportFile.WriteLine(nuevaLinea, true);
             }
 
             WriteReportFile.Close();
@@ -407,16 +547,19 @@ namespace Faverou
         #endregion
 
         #region Métodos Log
-        public void CrearLog(string _file)
+        public void CrearLogEntrada(string _file)
         {
             try
             {
                 string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Log\\";
                 string nameFile = "LogEntrada.txt";
                 string fullPath = path + nameFile;
-
+                
                 if (!File.Exists(fullPath))
-                    File.Create(fullPath);
+                {
+                    FileStream fs = File.Create(fullPath);
+                    fs.Close();
+                }
 
                 //Pass the filepath and filename to the StreamWriter Constructor
                 StreamWriter sw = new StreamWriter(fullPath, true);
@@ -430,6 +573,78 @@ namespace Faverou
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public void CrearLogSalida(string _file)
+        {
+            try
+            {
+                string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Log\\";
+                string nameFile = "LogSalida.txt";
+                string fullPath = path + nameFile;
+                
+                if (!File.Exists(fullPath))
+                {
+                    FileStream fs = File.Create(fullPath);
+                    fs.Close();
+                }
+
+                //Pass the filepath and filename to the StreamWriter Constructor
+                StreamWriter sw = new StreamWriter(fullPath, true);
+
+                //Write a line of text
+                sw.WriteLine(String.Format("{0:d/M/yyyy HH:mm:ss}", DateTime.Now) + "," + _file + "," + -1);
+
+                //Close the file
+                sw.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        #endregion
+
+        #region Encriptar
+        public void Encrypt(string _pathFile)
+        {
+            try
+            {
+                string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Cmd_Faverau_Encrypt.bat";
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    GenerateFileEncryptBat(path, _pathFile);
+                }
+                else
+                {
+                    GenerateFileEncryptBat(path, _pathFile);
+                }
+
+                Process.Start(path);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void GenerateFileEncryptBat(string path, string _pathFile)
+        {
+            // Create a file to write to.
+            using (StreamWriter sw = File.CreateText(path))
+            {
+                sw.WriteLine("@echo off");
+
+                string command = "cd C:\\";
+                string folder = "\"Program Files (x86)\\gnupg\\bin\"";
+
+                string commandEnd = command + folder;
+
+                sw.WriteLine(commandEnd);
+                sw.WriteLine("start gpg --default-key jperez@empresadejuanperez.com.ar -se -r diegoh.gomez@bancofrances.com.ar --passphrase 123 --armor " + _pathFile);
+                sw.WriteLine("exit");
             }
         }
         #endregion
