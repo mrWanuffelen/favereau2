@@ -44,13 +44,16 @@ namespace Faverou
                 DescargarTxtFTP(arch);
             }
             #endregion
-
+            
             #region DataTable
             DataTable data = new DataTable();
             string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosEntrada\\";
             foreach (string arch in archivos)
             {
                 String[] substrings = arch.Split('.');
+
+                Decrypt(path + substrings[0], substrings[0]);
+                                
                 DataTable newData = LecturaArchivoEntrada(path + substrings[0] + "\\" + arch);
                 data.Merge(newData);
 
@@ -267,7 +270,7 @@ namespace Faverou
                 Int32 cant1 = extension.Count();
                 if (extension.Count() > 1)
                 {
-                    if (extension[1].ToString() == "txt")
+                    if (extension[1].ToString() == "asc")
                         archivos_ftp.Add(caracter[cant].ToString());
                 }
             }
@@ -638,17 +641,59 @@ namespace Faverou
                 sw.WriteLine("@echo off");
 
                 string command = "cd C:\\";
-                string folder = "\"Program Files (x86)\\gnupg\\bin\"";
+                string folder = "\"Program Files (x86)\\gnu\\gnupg\"";
 
                 string commandEnd = command + folder;
 
                 sw.WriteLine(commandEnd);
-                sw.WriteLine("start gpg --default-key jperez@empresadejuanperez.com.ar -se -r diegoh.gomez@bancofrances.com.ar --passphrase 123 --armor " + _pathFile);
+                sw.WriteLine("start gpg --default-key jperez@empresadejuanperez.com.ar -se -r diegoh.gomez@bancofrances.com.ar --batch --yes --passphrase 123 --armor " + _pathFile);
+                sw.WriteLine("exit");
+            }
+        }
+
+
+        public void Decrypt(string _pathFile, string _nameFile)
+        {
+            try
+            {
+                string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Cmd_Faverau_Decrypt.bat";
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                    GenerateFileDecryptBat(path, _pathFile, _nameFile);
+                }
+                else
+                {
+                    GenerateFileDecryptBat(path, _pathFile, _nameFile);
+                }
+
+                Process.Start(path);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public void GenerateFileDecryptBat(string path, string _pathFile, string _nameFile)
+        {
+            // Create a file to write to.
+            using (StreamWriter sw = File.CreateText(path))
+            {
+                sw.WriteLine("@echo off");
+
+                string command = "cd C:\\";
+                string folder = "\"Program Files (x86)\\gnu\\gnupg\"";
+
+                string commandEnd = command + folder;
+
+                sw.WriteLine(commandEnd);
+                sw.WriteLine("start gpg --batch --yes --passphrase 123 -o salida.txt -d " + _pathFile + "\\" + _nameFile + ".asc");
                 sw.WriteLine("exit");
             }
         }
         #endregion
 
-        
+
     }
 }
