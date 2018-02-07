@@ -33,7 +33,8 @@ namespace Faverou
         static string user = "prueba";
         static string pass = "favereau";
 
-        string folderDown = "/In";
+        string folderDown = "/envia";
+        string foldeUp = "/recibe";
         #endregion
 
         string publica = "favereau2018";
@@ -493,6 +494,7 @@ namespace Faverou
         {
             try
             {
+                string foldeUp = "/recibe";
 
                 SessionOptions sessionOptions = new SessionOptions
                 {
@@ -511,7 +513,7 @@ namespace Faverou
                     transferOptions.TransferMode = TransferMode.Binary;
                     TransferOperationResult transferResult = default(TransferOperationResult);
 
-                    transferResult = session.PutFiles(path, "/OUT/", false, transferOptions);
+                    transferResult = session.PutFiles(path, foldeUp + "/", false, transferOptions);
                     transferResult.Check();
                 }
             }
