@@ -11,6 +11,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WinSCP;
 
 namespace Faverou
 {
@@ -27,33 +28,36 @@ namespace Faverou
         static string pass = "Acha2099";*/
 
         //static string url = "ftp://190.210.219.36";
-        static string urlDown = "ftp://190.210.219.36/IN/";
-        static string urlUp = "ftp://190.210.219.36/OUT/";
+        static string urlDown = "sftp://190.210.219.36:801/IN/";
+        static string urlUp = "sftp://190.210.219.36:801/OUT/";
         static string user = "prueba";
-        static string pass = "feriado";
+        static string pass = "favereau";
+
+        string folderDown = "/In";
         #endregion
+
+        string publica = "favereau2018";
 
         List<string> archivos = new List<string>();
 
         private void btnDescargarFTP_Click(object sender, EventArgs e)
         {
-            #region Ftp
+            // Setup session options            
+            #region Sftp
             archivos = listarArchivosFTP();
             foreach (string arch in archivos)
             {
                 DescargarTxtFTP(arch);
             }
             #endregion
-            
+
             #region DataTable
             DataTable data = new DataTable();
             string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\ArchivosEntrada\\";
             foreach (string arch in archivos)
             {
                 String[] substrings = arch.Split('.');
-
-                Decrypt(path + substrings[0], substrings[0]);
-                                
+                
                 DataTable newData = LecturaArchivoEntrada(path + substrings[0] + "\\" + arch);
                 data.Merge(newData);
 
@@ -88,7 +92,15 @@ namespace Faverou
             CrearLogSalida(nameFile);
 
             //Encriptar archivo
-            Encrypt(pathFile);            
+            Encrypt(pathFile);
+
+            string pathFolder = CreateDirectoryAndFileEnd(nameFolder);
+            FileInfo[] files = listAllArchivosDirectory(pathFolder);
+            foreach (FileInfo f in files)
+            {
+                if (f.Extension.ToString() != ".txt")
+                    UploadFile(pathFolder + "\\" + f.Name, f.Name);
+            }
         }
 
         private void btnInFTP_Click(object sender, EventArgs e)
@@ -118,8 +130,61 @@ namespace Faverou
         #region Descarga
         public void DescargarTxtFTP(string _fileName)
         {
-            string url = urlDown + _fileName;
+            try
+            {
+                string pathFolder = null;
+                string ficLocal = null;
+                string url = urlDown + _fileName;
+                string file = _fileName + ".txt.gpg";
 
+                // Setup session options
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = "190.210.219.36",
+                    PortNumber = 801,
+                    UserName = "prueba",
+                    Password = "favereau",
+                    SshHostKeyFingerprint = "ssh-rsa 2048 ab:08:05:38:17:5f:8e:59:3a:ba:a1:ad:26:9d:a5:1c"
+                };
+
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+
+                    // Download files
+                    TransferOptions transferOptions = new TransferOptions();
+                    transferOptions.TransferMode = TransferMode.Binary;
+
+                    TransferOperationResult transferResult;
+
+                    pathFolder = CreateDirectoryAndFile(_fileName);
+
+                    transferResult = session.GetFiles(folderDown + "/" + file, pathFolder + "\\", false, transferOptions);
+
+                    // Throw on any error
+                    transferResult.Check();
+
+                    ficLocal = Path.Combine(pathFolder, Path.GetFileName(url)) + ".txt";
+
+                    //Desencriptar
+                    Decrypt(url, _fileName, pathFolder);
+
+                    ArrayList documentos = ObtenerNombreDocumentacion(ficLocal);
+                    foreach (string doc in documentos)
+                    {
+                        DescargarPdfFTP(pathFolder, doc);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrearLogErrores("Método DescargarTxtFTP - " + ex.Message);
+            }
+
+            #region Viejo
+            /*
             #region Descargo el TXT
             // Get the object used to communicate with the server.
             FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(url));
@@ -148,17 +213,49 @@ namespace Faverou
             // Cerrar el stream abierto.
             reader.Close();
             #endregion
+            */
+
+            /*Decrypt(url, _fileName);
 
             ArrayList documentos = ObtenerNombreDocumentacion(ficLocal);
             foreach (string doc in documentos)
             {
                 DescargarPdfFTP(pathFolder, doc);
-            }
+            }*/
+            #endregion
         }
 
         public void DescargarPdfFTP(string path, string _fileName)
         {
-            string url = urlDown + _fileName;
+            // Setup session options
+            SessionOptions sessionOptions = new SessionOptions
+            {
+                Protocol = Protocol.Sftp,
+                HostName = "190.210.219.36",
+                PortNumber = 801,
+                UserName = "prueba",
+                Password = "favereau",
+                SshHostKeyFingerprint = "ssh-rsa 2048 ab:08:05:38:17:5f:8e:59:3a:ba:a1:ad:26:9d:a5:1c"
+            };
+
+            using (Session session = new Session())
+            {
+                // Connect
+                session.Open(sessionOptions);
+
+                // Download files
+                TransferOptions transferOptions = new TransferOptions();
+                transferOptions.TransferMode = TransferMode.Binary;
+
+                TransferOperationResult transferResult;
+                
+                transferResult = session.GetFiles("/In/" + _fileName, path + "\\", false, transferOptions);
+
+                // Throw on any error
+                transferResult.Check();
+            }
+
+            /*string url = urlDown + _fileName;
 
             string ResponseDescription = "";
             path += "\\" + _fileName;
@@ -187,7 +284,7 @@ namespace Faverou
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            }*/
         }
 
         public string CreateDirectoryAndFile(string _nameFolder)
@@ -214,33 +311,82 @@ namespace Faverou
 
         public ArrayList ObtenerNombreDocumentacion(string _path)
         {
-            ArrayList documentos = new ArrayList();
+            try { 
+                ArrayList documentos = new ArrayList();
 
-            string texto = System.IO.File.ReadAllText(_path);
+                string texto = System.IO.File.ReadAllText(_path);
 
-            String[] posicionDoc = texto.Split(';');
+                String[] posicionDoc = texto.Split(';');
 
-            if (!string.IsNullOrEmpty(posicionDoc[38]))
-                documentos.Add(posicionDoc[38].ToString());
+                if (!string.IsNullOrEmpty(posicionDoc[38]))
+                    documentos.Add(posicionDoc[38].ToString());
 
-            if (!string.IsNullOrEmpty(posicionDoc[39]))
-                documentos.Add(posicionDoc[39].ToString());
+                if (!string.IsNullOrEmpty(posicionDoc[39]))
+                    documentos.Add(posicionDoc[39].ToString());
 
-            if (!string.IsNullOrEmpty(posicionDoc[40]))
-                documentos.Add(posicionDoc[40].ToString());
+                if (!string.IsNullOrEmpty(posicionDoc[40]))
+                    documentos.Add(posicionDoc[40].ToString());
 
-            if (!string.IsNullOrEmpty(posicionDoc[41]))
-                documentos.Add(posicionDoc[41].ToString());
+                if (!string.IsNullOrEmpty(posicionDoc[41]))
+                    documentos.Add(posicionDoc[41].ToString());
 
-            if (!string.IsNullOrEmpty(posicionDoc[42]))
-                documentos.Add(posicionDoc[42].ToString());
+                if (!string.IsNullOrEmpty(posicionDoc[42]))
+                    documentos.Add(posicionDoc[42].ToString());
 
-            return documentos;
+                return documentos;
+            }
+            catch (Exception ex)
+            {
+                CrearLogErrores("Método ObtenerNombreDocumentacion - " + ex.Message);
+                return null;
+            }
         }
                 
         public List<string> listarArchivosFTP()
         {
-            FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(urlDown));
+            try
+            {
+                List<string> archivos_ftp = new List<string>();
+
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = "190.210.219.36",
+                    PortNumber = 801,
+                    UserName = "prueba",
+                    Password = "favereau",
+                    SshHostKeyFingerprint = "ssh-rsa 2048 ab:08:05:38:17:5f:8e:59:3a:ba:a1:ad:26:9d:a5:1c"
+                };
+
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+
+                    RemoteDirectoryInfo directory =
+                        session.ListDirectory("/In");
+
+                    foreach (RemoteFileInfo fileInfo in directory.Files)
+                    {
+                        String[] extension = fileInfo.ToString().Split('.');
+                        if (extension.Count() > 2)
+                        {
+                            if (extension[2].ToString() == "asc" || extension[2].ToString() == "gpg")
+                                archivos_ftp.Add(extension[0].ToString());
+                        }
+                    }
+                }
+
+                return archivos_ftp;
+            }
+            catch(Exception ex)
+            {
+                CrearLogErrores("Método listarArchivosFTP() - " + ex.Message);
+                return null;
+            }
+
+            #region viejo
+            /*FtpWebRequest dirFtp = ((FtpWebRequest)FtpWebRequest.Create(urlDown));
 
             // Los datos del usuario (credenciales)
             NetworkCredential cr = new NetworkCredential(user, pass);
@@ -276,7 +422,8 @@ namespace Faverou
             }
             reader.Close();
 
-            return archivos_ftp;
+            return archivos_ftp;*/
+            #endregion
         }
 
         public List<string> listAllArchivosFTP()
@@ -344,7 +491,37 @@ namespace Faverou
 
         public static void UploadFile(string path, string _fileName)
         {
-            string newUri = urlUp + _fileName;
+            try
+            {
+
+                SessionOptions sessionOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = "190.210.219.36",
+                    PortNumber = 801,
+                    UserName = "prueba",
+                    Password = "favereau",
+                    SshHostKeyFingerprint = "ssh-rsa 2048 ab:08:05:38:17:5f:8e:59:3a:ba:a1:ad:26:9d:a5:1c"
+                };
+
+                using (Session session = new Session())
+                {
+                    session.Open(sessionOptions);
+                    TransferOptions transferOptions = new TransferOptions();
+                    transferOptions.TransferMode = TransferMode.Binary;
+                    TransferOperationResult transferResult = default(TransferOperationResult);
+
+                    transferResult = session.PutFiles(path, "/OUT/", false, transferOptions);
+                    transferResult.Check();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }         
+            
+           
+            /*string newUri = urlUp + _fileName;
 
             FtpWebRequest ftpRequest;
             FtpWebResponse ftpResponse;
@@ -377,7 +554,7 @@ namespace Faverou
             catch (WebException webex)
             {
                 MessageBox.Show(webex.ToString());
-            }
+            }*/
         }
         #endregion
 
@@ -550,6 +727,35 @@ namespace Faverou
         #endregion
 
         #region Métodos Log
+        public void CrearLogErrores(string message)
+        {
+            try
+            {
+                string path = AppDomain.CurrentDomain.BaseDirectory.Replace("bin\\Debug\\", "") + "Archivos\\Log\\";
+                string nameFile = "LogErrores.txt";
+                string fullPath = path + nameFile;
+
+                if (!File.Exists(fullPath))
+                {
+                    FileStream fs = File.Create(fullPath);
+                    fs.Close();
+                }
+
+                //Pass the filepath and filename to the StreamWriter Constructor
+                StreamWriter sw = new StreamWriter(fullPath, true);
+
+                //Write a line of text
+                sw.WriteLine(message);
+
+                //Close the file
+                sw.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         public void CrearLogEntrada(string _file)
         {
             try
@@ -646,13 +852,13 @@ namespace Faverou
                 string commandEnd = command + folder;
 
                 sw.WriteLine(commandEnd);
-                sw.WriteLine("start gpg --default-key jperez@empresadejuanperez.com.ar -se -r diegoh.gomez@bancofrances.com.ar --batch --yes --passphrase 123 --armor " + _pathFile);
+                sw.WriteLine("start gpg --default-key favereau@gmail.com -se -r diegoh.gomez@bancofrances.com.ar --batch --yes --passphrase " + publica + " --armor " + _pathFile);
                 sw.WriteLine("exit");
             }
         }
 
 
-        public void Decrypt(string _pathFile, string _nameFile)
+        public void Decrypt(string _pathFile, string _nameFile, string pathFolder)
         {
             try
             {
@@ -660,11 +866,11 @@ namespace Faverou
                 if (File.Exists(path))
                 {
                     File.Delete(path);
-                    GenerateFileDecryptBat(path, _pathFile, _nameFile);
+                    GenerateFileDecryptBat(path, _pathFile, _nameFile, pathFolder);
                 }
                 else
                 {
-                    GenerateFileDecryptBat(path, _pathFile, _nameFile);
+                    GenerateFileDecryptBat(path, _pathFile, _nameFile, pathFolder);
                 }
 
                 Process.Start(path);
@@ -675,7 +881,7 @@ namespace Faverou
             }
         }
 
-        public void GenerateFileDecryptBat(string path, string _pathFile, string _nameFile)
+        public void GenerateFileDecryptBat(string path, string _pathFile, string _nameFile, string _pathExit)
         {
             // Create a file to write to.
             using (StreamWriter sw = File.CreateText(path))
@@ -688,12 +894,10 @@ namespace Faverou
                 string commandEnd = command + folder;
 
                 sw.WriteLine(commandEnd);
-                sw.WriteLine("start gpg --batch --yes --passphrase 123 -o salida.txt -d " + _pathFile + "\\" + _nameFile + ".asc");
+                sw.WriteLine("start gpg --batch --yes --passphrase " + publica + " -o " + _pathExit + "\\" + _nameFile + ".txt -d " + _pathExit + "\\" + _nameFile + ".txt.gpg");
                 sw.WriteLine("exit");
             }
         }
         #endregion
-
-
     }
 }
